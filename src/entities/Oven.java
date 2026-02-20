@@ -8,7 +8,7 @@ public class Oven {
     private boolean poweredOn;
 
     public Oven(boolean poweredOn, Double actualTemperature) {
-        this.poweredOn = false;
+        this.poweredOn = true;
         this.actualTemperature = 25.0;
     }
 
@@ -27,14 +27,26 @@ public class Oven {
         try {
             if(poweredOn) {
                 this.activeMode = mode;
-                System.out.printf("Mode changed to: " + mode.getClass().getName());
+                System.out.println("Mode changed to: " + mode.getClass().getSimpleName());
             }
         } catch (Exception e) {
             System.out.println("Error: Oven not operating.");
         }
     }
 
-    public void powerOn(){
-        this.poweredOn = true;
-    } 
+    public void startCooking() {
+        if (!poweredOn) {
+            System.out.println("Error: The oven is off.");
+            return;
+        }
+        else if (activeMode == null) {
+            System.out.println("Error: Select a mode (Grill, Skewer or Form) before start.");
+            return;
+        }
+        else {
+            System.out.println("Initializing heater...");
+            activeMode.execute(); 
+        }
+        
+    }
 }

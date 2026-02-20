@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>DuChef Dual Console</title>
+    <style>
+        :root {
+            --neon-white: #ffffff;
+            --neon-blue: #00d4ff;
+            --glass: rgba(255, 255, 255, 0.03);
+            --panel-border: #333;
+        }
+
+        body {
+            background-color: #050505;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            gap: 20px; /* Espaço entre os dois displays */
+        }
+
+        /* Estilo Base dos Displays */
+        .display-unit {
+            width: 300px;
+            height: 480px;
+            background: #111;
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .screen {
+            flex-grow: 1;
+            background: #000;
+            border: 1px solid #222;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label { font-size: 0.65rem; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .active-text { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+
+        /* Display Esquerdo (Modos) */
+        .mode-btn {
+            background: var(--glass);
+            border: 1px solid #333;
+            color: #888;
+            padding: 15px;
+            margin-bottom: 10px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .mode-btn.selected { border-color: var(--neon-blue); color: white; background: rgba(0, 212, 255, 0.05); }
+
+        /* Display Direito (Numpad e Valores) */
+        .value-readout { text-align: right; margin-bottom: 20px; }
+        .main-val { font-size: 2.5rem; font-weight: 200; }
+        .sub-val { font-size: 1.2rem; color: #444; }
+        
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .num-btn { background: none; border: 1px solid transparent; color: white; padding: 15px; font-size: 1.1rem; cursor: pointer; }
+        .num-btn:hover { border-color: #555; }
+        .num-btn.ok-btn { background: var(--neon-blue); color: black; font-weight: bold; border-radius: 4px; }
+
+        .btn-start {
+            margin-top: auto;
+            background: white;
+            color: black;
+            border: none;
+            padding: 20px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .btn-start.ready { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="display-unit" id="unit-left">
+        <div class="label">System Status</div>
+        <div class="screen">
+            <div id="status-text" style="font-size: 0.8rem; margin-bottom: 20px; color: #00ff41;">● STANDBY</div>
+            
+            <div class="label">Select Function</div>
+            <div class="mode-btn" id="btn-GRILL" onclick="setMode('GRILL')">01. GRILL MODE</div>
+            <div class="mode-btn" id="btn-SKEWER" onclick="setMode('SKEWER')">02. SKEWER ROTATION</div>
+            <div class="mode-btn" id="btn-FORM" onclick="setMode('FORM')">03. FORM CONVECTION</div>
+            
+            <div id="mode-desc" style="margin-top: auto; font-size: 0.7rem; color: #555; line-height: 1.4;">
+                Selecione uma função para habilitar o painel de configuração à direita.
+            </div>
+        </div>
+    </div>
+
+    <div class="display-unit" id="unit-right">
+        <div class="label">Configuration</div>
+        <div class="screen">
+            <div class="value-readout">
+                <div class="label">Target Temperature</div>
+                <div class="main-val" id="disp-temp"><span id="val-temp" class="active-text">0</span>°C</div>
+                <div class="label" style="margin-top:10px">Timer</div>
+                <div class="sub-val" id="disp-time"><span id="val-time">00:00</span></div>
+            </div>
+
+            <div class="numpad">
+                <button class="num-btn" onclick="pressNum('1')">1</button>
+                <button class="num-btn" onclick="pressNum('2')">2</button>
+                <button class="num-btn" onclick="pressNum('3')">3</button>
+                <button class="num-btn" onclick="pressNum('4')">4</button>
+                <button class="num-btn" onclick="pressNum('5')">5</button>
+                <button class="num-btn" onclick="pressNum('6')">6</button>
+                <button class="num-btn" onclick="pressNum('7')">7</button>
+                <button class="num-btn" onclick="pressNum('8')">8</button>
+                <button class="num-btn" onclick="pressNum('9')">9</button>
+                <button class="num-btn" onclick="clearAll()">C</button>
+                <button class="num-btn" onclick="pressNum('0')">0</button>
+                <button class="num-btn ok-btn" onclick="confirmStep()">OK</button>
+            </div>
+
+            <button id="start-btn" class="btn-start" onclick="initCook()">START</button>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = null;
+        let step = "temp"; // temp ou time
+        let tempVal = "";
+        let timeVal = "";
+
+        function setMode(mode) {
+            currentMode = mode;
+            // UI do Display Esquerdo
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('btn-' + mode).classList.add('selected');
+            document.getElementById('status-text').innerText = "● FUNCTION: " + mode;
+            document.getElementById('mode-desc').innerText = "Função " + mode + " selecionada. Insira os parâmetros de temperatura no painel direito.";
+        }
+
+        function pressNum(n) {
+            if (step === "temp" && tempVal.length < 3) tempVal += n;
+            else if (step === "time" && timeVal.length < 4) timeVal += n;
+            updateRightDisplay();
+        }
+
+        function updateRightDisplay() {
+            document.getElementById('val-temp').innerText = tempVal || "0";
+            
+            let t = timeVal.padStart(4, '0');
+            document.getElementById('val-time').innerText = t.substring(0,2) + ":" + t.substring(2,4);
+
+            // Toggle do foco visual
+            document.getElementById('val-temp').classList.toggle('active-text', step === "temp");
+            document.getElementById('val-time').classList.toggle('active-text', step === "time");
+        }
+
+        function confirmStep() {
+            if (step === "temp" && tempVal !== "") {
+                step = "time";
+            } else if (step === "time" && timeVal !== "") {
+                if (!currentMode) return alert("Selecione um Modo no Display Esquerdo!");
+                document.getElementById('start-btn').classList.add('ready');
+            }
+            updateRightDisplay();
+        }
+
+        function clearAll() {
+            tempVal = ""; timeVal = ""; step = "temp";
+            document.getElementById('start-btn').classList.remove('ready');
+            updateRightDisplay();
+        }
+
+        function initCook() {
+            alert("SISTEMA DUCHEF INICIADO\nModo: " + currentMode + "\nTemp: " + tempVal + "°C\nTempo: " + timeVal);
+        }
+    </script>
+</body>
+</html>

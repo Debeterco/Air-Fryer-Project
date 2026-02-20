@@ -4,6 +4,6 @@ public class GrillMode implements OperationMode{
     @Override
     public void execute() {
         // Logic
-        System.out.println("[GRILL] - Active motor -");
+        System.out.println("[GRILL] - Active motor - Working");
     }
 }
