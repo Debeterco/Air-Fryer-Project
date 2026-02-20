@@ -1,3 +1,5 @@
+package src.entities;
+
 public class DigitalDisplay {
     // Retorna uma lista de strings para o HTML renderizar
     public String[] getModes() {
